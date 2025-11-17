@@ -2,21 +2,21 @@
 
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
-from dotenv import load_dotenv
-import os
+import uuid
+from datetime import datetime
 
-load_dotenv()
-
-SERVICE_ACCOUNT_PATH = os.environ["GOOGLE_SA_PATH"]
-SHEET_ID = os.environ["SHEET_ID"]
-
+# Authentification via service account
 creds = Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_PATH,
+    "service_account.json",
     scopes=["https://www.googleapis.com/auth/spreadsheets"]
 )
 
 sheet_service = build("sheets", "v4", credentials=creds)
 
+# ID du Google Sheet
+SHEET_ID = "1uRE_SPJW1q1hg5vcuBkc-_AxlBww1O536Z5-dH5oa9k"
+
+# Mapping catégories → nom de feuille
 SHEET_TABS = {
     "Problème technique informatique": "Technique",
     "Demande administrative": "Administratif",
@@ -25,35 +25,38 @@ SHEET_TABS = {
     "Bug / dysfonctionnement": "Bug",
 }
 
-
 def append_to_sheet(cat, sujet, urgence, synthese):
     sheet_name = SHEET_TABS[cat]
 
-    # Lire la première ligne
+    # Vérifier si les en-têtes existent déjà
     result = sheet_service.spreadsheets().values().get(
         spreadsheetId=SHEET_ID,
-        range=f"{sheet_name}!A1:C1"
+        range=f"{sheet_name}!A1:E1"
     ).execute()
 
     values = result.get("values", [])
 
-    # Ajouter les en-têtes si la feuille est vide
+    # Ajouter en-têtes si absents
     if not values:
-        headers = [["Sujet", "Urgence", "Synthèse"]]
+        headers = [["ids_mail", "Sujet", "Urgence", "Synthèse", "date_enregistrement"]]
         sheet_service.spreadsheets().values().append(
             spreadsheetId=SHEET_ID,
-            range=f"{sheet_name}!A1:C1",
+            range=f"{sheet_name}!A1:E1",
             valueInputOption="RAW",
             body={"values": headers}
         ).execute()
         print(f"[OK] En-têtes ajoutés dans '{sheet_name}'")
 
-    # Ajouter le ticket
-    new_row = [[sujet, urgence, synthese]]
+    # Génération automatique
+    random_id = str(uuid.uuid4())[:8]  # id court
+    today = datetime.now().strftime("%Y/%m/%d")
+
+    # Nouvel enregistrement
+    new_row = [[random_id, sujet, urgence, synthese, today]]
 
     sheet_service.spreadsheets().values().append(
         spreadsheetId=SHEET_ID,
-        range=f"{sheet_name}!A:C",
+        range=f"{sheet_name}!A:E",
         valueInputOption="RAW",
         body={"values": new_row}
     ).execute()
