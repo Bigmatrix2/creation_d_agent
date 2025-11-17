@@ -1,10 +1,11 @@
 # classification_mail.py
 
-from groq import Groq
+from groq import Groq, RateLimitError
 from dotenv import load_dotenv
 import json
 import os
 import re
+import time
 
 # Charger variables du .env
 load_dotenv()
@@ -25,7 +26,7 @@ PROMPT_TEMPLATE = load_text_file("prompt.txt")
 # --- Nettoyage du JSON renvoyé ---
 def clean_json(raw: str) -> str:
     """
-    Supprime les backticks, blocs ```json et espaces autour.
+    Supprime les blocs ```json et ``` autour de la réponse.
     """
     cleaned = re.sub(r"```json|```", "", raw).strip()
     return cleaned
@@ -38,32 +39,39 @@ def classify_ticket(subject: str, body: str) -> dict:
     prompt = PROMPT_TEMPLATE.replace("{{sujet}}", subject)\
                             .replace("{{contenu}}", body)
 
-    # On ajoute le contexte comme system prompt
     messages = [
         {"role": "system", "content": CONTEXT},
         {"role": "user", "content": prompt}
     ]
 
-    # Appel au modèle
-    completion = client.chat.completions.create(
-        model="openai/gpt-oss-20b",
-        messages=messages
-    )
+    # --------------- Gestion Rate Limit (retry auto) ----------------
+    while True:
+        try:
+            completion = client.chat.completions.create(
+                model="openai/gpt-oss-20b",
+                messages=messages
+            )
+            break  # Si ça marche, on sort de la boucle
 
-    # Récupération du contenu
+        except RateLimitError:
+            print("\n  Rate limit atteint — pause 15 secondes...\n")
+            time.sleep(15)
+    # ------------------------------------------------------------------
+
+    # Contenu brut
     raw_response = completion.choices[0].message.content.strip()
 
-    # Debug console (utile)
+    # Debug console
     print("\n===== RÉPONSE GROQ =====")
     print(raw_response)
     print("===== FIN RÉPONSE GROQ =====\n")
 
-    # Nettoyage
+    # Nettoyage JSON
     json_text = clean_json(raw_response)
 
     print("===== JSON NETTOYÉ =====")
     print(json_text)
     print("===== FIN JSON NETTOYÉ =====\n")
 
-    # Conversion en dict Python
+    # Conversion
     return json.loads(json_text)
