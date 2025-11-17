@@ -4,6 +4,14 @@ from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 import uuid
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+# Charger les variables du .env
+load_dotenv()
+
+# ID du Google Sheet (maintenant dans .env)
+SHEET_ID = os.environ["SHEET_ID"]
 
 # Authentification via service account
 creds = Credentials.from_service_account_file(
@@ -13,15 +21,13 @@ creds = Credentials.from_service_account_file(
 
 sheet_service = build("sheets", "v4", credentials=creds)
 
-# ID du Google Sheet
-SHEET_ID = "1uRE_SPJW1q1hg5vcuBkc-_AxlBww1O536Z5-dH5oa9k"
-
 # Mapping catégories → nom de feuille
 SHEET_TABS = {
     "Problème technique informatique": "Technique",
     "Demande administrative": "Administratif",
     "Problème d’accès / authentification": "Acces",
     "Support utilisateur": "Support",
+    "Demande de support utilisateur": "Support",
     "Bug / dysfonctionnement": "Bug",
 }
 
@@ -51,7 +57,7 @@ def append_to_sheet(cat, sujet, urgence, synthese):
     random_id = str(uuid.uuid4())[:8]  # id court
     today = datetime.now().strftime("%Y/%m/%d")
 
-    # Nouvel enregistrement
+    # Nouvelle ligne
     new_row = [[random_id, sujet, urgence, synthese, today]]
 
     sheet_service.spreadsheets().values().append(
