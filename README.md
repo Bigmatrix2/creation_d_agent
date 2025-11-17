@@ -30,24 +30,7 @@ L’agent doit :
 ---
 
 ## 2. Architecture du projet
-agent_ticketing/
-│
-├── main.py # Script principal orchestrant tout le pipeline
-├── classification_mail.py # Analyse IA (Groq) + nettoyage JSON
-├── utils_gmail.py # Lecture et parsing des e-mails Gmail
-├── utils_sheets.py # Écriture dans Google Sheets
-│
-├── context.txt # Instructions d'agent à respecter
-├── prompt.txt # Template du prompt utilisé pour chaque mail
-│
-├── requirements.txt # Dépendances Python
-├── .gitignore # Exclusion des fichiers sensibles
-├── README.md # Documentation du projet
-│
-├── .env # Clé Groq (IGNORÉ DU DÉPÔT)
-├── credentials.json # OAuth Gmail (IGNORÉ DU DÉPÔT)
-└── service_account.json # Service Account Sheets (IGNORÉ DU DÉPÔT)
-
+<img width="790" height="656" alt="image" src="https://github.com/user-attachments/assets/5a335642-9866-49f8-b564-98c2def94aba" />
 
 Cette architecture sépare proprement :
 
@@ -215,3 +198,4 @@ Le dépôt peut être cloné et réutilisé facilement.
 ## 10. Auteur
 
 Projet réalisé dans le cadre du module d’automatisation de traitement de tickets e-mail par IA.
+
