@@ -1,4 +1,3 @@
-
 # classification_mail.py
 
 from groq import Groq
@@ -7,73 +6,64 @@ import json
 import os
 import re
 
-# Charger les variables du .env
+# Charger variables du .env
 load_dotenv()
 
 client = Groq(api_key=os.environ["GROQ_KEY"])
 
 
-def clean_json(text: str) -> str:
+# --- Charger les fichiers externes ---
+def load_text_file(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+CONTEXT = load_text_file("context.txt")
+PROMPT_TEMPLATE = load_text_file("prompt.txt")
+
+
+# --- Nettoyage du JSON renvoyé ---
+def clean_json(raw: str) -> str:
     """
-    Nettoie la réponse du modèle :
-    - enlève les blocs ```json ... ```
-    - enlève les ``` tout courts
-    - enlève les espaces inutiles
+    Supprime les backticks, blocs ```json et espaces autour.
     """
-    # Retirer les blocs ```json ... ```
-    text = re.sub(r"```json", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"```", "", text)
-
-    # Retirer espaces en trop
-    return text.strip()
+    cleaned = re.sub(r"```json|```", "", raw).strip()
+    return cleaned
 
 
+# --- Fonction principale ---
 def classify_ticket(subject: str, body: str) -> dict:
-    prompt = f"""
-    Tu es un classifieur de tickets automatisé.
-    Pour le ticket suivant, retourne un JSON strict :
 
-    - categorie ∈ ["Problème technique informatique", "Demande administrative",
-                   "Problème d’accès / authentification", "Support utilisateur",
-                   "Bug / dysfonctionnement"]
+    # Construire le prompt final
+    prompt = PROMPT_TEMPLATE.replace("{{sujet}}", subject)\
+                            .replace("{{contenu}}", body)
 
-    - urgence ∈ ["Anodine", "Faible", "Modérée", "Élevée", "Critique"]
+    # On ajoute le contexte comme system prompt
+    messages = [
+        {"role": "system", "content": CONTEXT},
+        {"role": "user", "content": prompt}
+    ]
 
-    - synthese : résumé en une phrase
-
-    Sujet : {subject}
-    Message : {body}
-
-    Répond UNIQUEMENT un JSON valide.
-    """
-
+    # Appel au modèle
     completion = client.chat.completions.create(
         model="openai/gpt-oss-20b",
-        messages=[{"role": "user", "content": prompt}]
+        messages=messages
     )
 
-    content = completion.choices[0].message.content.strip()
+    # Récupération du contenu
+    raw_response = completion.choices[0].message.content.strip()
 
+    # Debug console (utile)
     print("\n===== RÉPONSE GROQ =====")
-    print(content)
+    print(raw_response)
     print("===== FIN RÉPONSE GROQ =====\n")
 
-    # Nettoyer la réponse
-    cleaned = clean_json(content)
+    # Nettoyage
+    json_text = clean_json(raw_response)
 
-    # Debug
     print("===== JSON NETTOYÉ =====")
-    print(cleaned)
+    print(json_text)
     print("===== FIN JSON NETTOYÉ =====\n")
 
-    # Charger en JSON
-    try:
-        return json.loads(cleaned)
-    except Exception as e:
-        print("ERREUR JSON:", e)
-        print("Réponse brute était : ", content)
-        return {
-            "categorie": "Support utilisateur",
-            "urgence": "Faible",
-            "synthese": "Impossible de parser la réponse du modèle."
-        }
+    # Conversion en dict Python
+    return json.loads(json_text)
