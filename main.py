@@ -15,7 +15,7 @@ def main():
     print(f"{len(messages)} mails trouvés.")
 
     for msg in messages:
-        sujet, corps = parse_email(msg)
+        sujet, corps, date_envoi = parse_email(msg)
         print(f"\nTraitement du ticket : {sujet}")
 
         data = classify_ticket(sujet, corps)
@@ -27,7 +27,8 @@ def main():
         print(f"→ Catégorie : {categorie}")
         print(f"→ Urgence   : {urgence}")
 
-        append_to_sheet(categorie, sujet, urgence, synthese)
+        append_to_sheet(categorie, sujet, urgence, synthese, date_envoi)
+
 
     print("\n Tous les tickets ont été écrits dans Google Sheets.")
 

@@ -23,7 +23,17 @@ def get_all_messages(service, max_results=549):
 
 def parse_email(message):
     headers = message["payload"]["headers"]
+
     subject = next((h["value"] for h in headers if h["name"] == "Subject"), "")
+    date_raw = next((h["value"] for h in headers if h["name"] == "Date"), "")
+
+    # Convertir la date Gmail (RFC2822) en format YYYY/MM/DD
+    from email.utils import parsedate_to_datetime
+    try:
+        dt = parsedate_to_datetime(date_raw)
+        date_envoi = dt.strftime("%Y/%m/%d")
+    except:
+        date_envoi = ""
 
     body = ""
     payload = message["payload"]
@@ -39,4 +49,4 @@ def parse_email(message):
         if data:
             body = base64.urlsafe_b64decode(data).decode()
 
-    return subject, body
+    return subject, body, date_envoi

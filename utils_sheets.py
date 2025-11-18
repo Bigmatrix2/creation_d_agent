@@ -10,7 +10,7 @@ import os
 # Charger les variables du .env
 load_dotenv()
 
-# ID du Google Sheet (maintenant dans .env)
+# ID du Google Sheet
 SHEET_ID = os.environ["SHEET_ID"]
 
 # Authentification via service account
@@ -31,7 +31,7 @@ SHEET_TABS = {
     "Bug / dysfonctionnement": "Bug",
 }
 
-def append_to_sheet(cat, sujet, urgence, synthese):
+def append_to_sheet(cat, sujet, urgence, synthese, date_envoi):
     sheet_name = SHEET_TABS[cat]
 
     # Vérifier si les en-têtes existent déjà
@@ -53,12 +53,11 @@ def append_to_sheet(cat, sujet, urgence, synthese):
         ).execute()
         print(f"[OK] En-têtes ajoutés dans '{sheet_name}'")
 
-    # Génération automatique
-    random_id = str(uuid.uuid4())[:8]  # id court
-    today = datetime.now().strftime("%Y/%m/%d")
+    # Génération id
+    random_id = str(uuid.uuid4())[:8]
 
-    # Nouvelle ligne
-    new_row = [[random_id, sujet, urgence, synthese, today]]
+    # Ajout : date réelle du mail (déjà convertie)
+    new_row = [[random_id, sujet, urgence, synthese, date_envoi]]
 
     sheet_service.spreadsheets().values().append(
         spreadsheetId=SHEET_ID,
@@ -68,3 +67,4 @@ def append_to_sheet(cat, sujet, urgence, synthese):
     ).execute()
 
     print(f"[OK] Ticket ajouté dans '{sheet_name}'")
+

@@ -54,8 +54,8 @@ def classify_ticket(subject: str, body: str) -> dict:
             break  # Si ça marche, on sort de la boucle
 
         except RateLimitError:
-            print("\n  Rate limit atteint — pause 15 secondes...\n")
-            time.sleep(15)
+            print("\n  Rate limit atteint — pause 2 secondes...\n")
+            time.sleep(2)
     # ------------------------------------------------------------------
 
     # Contenu brut
