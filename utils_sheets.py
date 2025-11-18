@@ -21,17 +21,40 @@ creds = Credentials.from_service_account_file(
 
 sheet_service = build("sheets", "v4", credentials=creds)
 
-# Mapping catégories → nom de feuille
+# --- Fonction de normalisation ---
+def normalize(text: str) -> str:
+    """
+    Nettoie les apostrophes typographiques → apostrophe ASCII
+    Supprime les espaces inutiles
+    """
+    if not isinstance(text, str):
+        return text
+
+    # Convertir apostrophe ’ → '
+    text = text.replace("’", "'")
+
+    return text.strip()
+
+
+# Mapping catégories → nom de feuille (version normalisée)
 SHEET_TABS = {
     "Problème technique informatique": "Technique",
     "Demande administrative": "Administratif",
-    "Problème d’accès / authentification": "Acces",
+    "Problème d'accès / authentification": "Acces",
     "Support utilisateur": "Support",
     "Demande de support utilisateur": "Support",
     "Bug / dysfonctionnement": "Bug",
 }
 
+
 def append_to_sheet(cat, sujet, urgence, synthese, date_envoi):
+
+    # Normalisation : évite 100% des KeyError
+    cat = normalize(cat)
+
+    if cat not in SHEET_TABS:
+        raise KeyError(f"Catégorie inconnue après normalisation : {cat}")
+
     sheet_name = SHEET_TABS[cat]
 
     # Vérifier si les en-têtes existent déjà
@@ -56,7 +79,7 @@ def append_to_sheet(cat, sujet, urgence, synthese, date_envoi):
     # Génération id
     random_id = str(uuid.uuid4())[:8]
 
-    # Ajout : date réelle du mail (déjà convertie)
+    # Ajout : date réelle du mail
     new_row = [[random_id, sujet, urgence, synthese, date_envoi]]
 
     sheet_service.spreadsheets().values().append(
@@ -67,4 +90,3 @@ def append_to_sheet(cat, sujet, urgence, synthese, date_envoi):
     ).execute()
 
     print(f"[OK] Ticket ajouté dans '{sheet_name}'")
-
